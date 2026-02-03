@@ -4,6 +4,9 @@ use std::fmt::Display;
 
 type SquareIndex = u8;
 
+#[derive(Debug, Default)]
+struct Bitboard(u64);
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum PieceKind {
     Pawn,
@@ -63,7 +66,7 @@ impl Rank {
         (b'1' + self as u8) as char
     }
 }
-
+#[derive(Debug, Copy, Clone)]
 struct Position {
     file: File,
     rank: Rank,
@@ -92,31 +95,76 @@ enum Square {
     OffBoard,
 }
 
-#[derive(Debug)]
-struct Board([Square; 120]);
-
 impl Default for Square {
     fn default() -> Self {
         Square::OffBoard
     }
 }
 
+#[derive(Debug, Default)]
+struct PieceKindCounts {
+    pawns: u8,
+    knights: u8,
+    bishops: u8,
+    rooks: u8,
+    queens: u8,
+    kings: u8,
+}
+
+#[derive(Debug, Default)]
+struct ColoredData<T> {
+    white: T,
+    black: T,
+    both: T,
+}
+
+#[derive(Debug, Default)]
+struct ColoredPair<T> {
+    white: T,
+    black: T,
+}
+
+#[derive(Debug)]
+struct Board {
+    squares: [Square; 120],
+    turn: Color,
+    en_passant_target: Option<Position>,
+    pawns: ColoredData<Bitboard>,
+    pieces: ColoredData<PieceKindCounts>,
+    big_pieces: ColoredData<u8>,
+    major_pieces: ColoredData<u8>,
+    minor_pieces: ColoredData<u8>,
+    kings: ColoredPair<Position>,
+}
+
 impl Board {
     fn new() -> Self {
-        Board([Square::OffBoard; 120])
+        Board {
+            squares: [Square::OffBoard; 120],
+            turn: Color::White,
+            en_passant_target: None,
+            pawns: ColoredData::default(),
+            pieces: ColoredData::default(),
+            big_pieces: ColoredData::default(),
+            major_pieces: ColoredData::default(),
+            minor_pieces: ColoredData::default(),
+            kings: ColoredPair {
+                white: Position::new(File::E, Rank::One),
+                black: Position::new(File::E, Rank::Eight),
+            },
+        }
     }
 }
 
+#[derive(Debug)]
+struct State {
+    board: Board,
+    ply: u32,
+    history_ply: u32,
+    fifty_moves: u8,
+}
+
 fn main() {
-    let position = Position::new(File::A, Rank::One);
-    println!("{} index is {}", position, position.to_index());
-
-    let position = Position::new(File::H, Rank::Eight);
-    println!("{} index is {}", position, position.to_index());
-
-    let position = Position::new(File::D, Rank::Four);
-    println!("{} index is {}", position, position.to_index());
-
     let board = Board::new();
     println!("{:?}", board);
 }
@@ -166,5 +214,91 @@ mod tests {
         assert_eq!(Position::new(File::A, Rank::One).to_string(), "a1");
         assert_eq!(Position::new(File::E, Rank::Four).to_string(), "e4");
         assert_eq!(Position::new(File::H, Rank::Eight).to_string(), "h8");
+    }
+
+    #[test]
+    fn test_board_initialization() {
+        let board = Board::new();
+
+        // Verify turn is initialized to White
+        assert!(matches!(board.turn, Color::White));
+
+        // Verify en_passant_target is None
+        assert!(board.en_passant_target.is_none());
+
+        // Verify all squares are initialized to OffBoard
+        for square in board.squares.iter() {
+            assert!(matches!(square, Square::OffBoard));
+        }
+    }
+
+    #[test]
+    fn test_board_kings_initialization() {
+        let board = Board::new();
+
+        // Verify kings are initialized at proper starting positions
+        // White king at e1
+        assert_eq!(board.kings.white.file, File::E);
+        assert_eq!(board.kings.white.rank, Rank::One);
+
+        // Black king at e8
+        assert_eq!(board.kings.black.file, File::E);
+        assert_eq!(board.kings.black.rank, Rank::Eight);
+    }
+
+    #[test]
+    fn test_colored_data_default() {
+        let data: ColoredData<Bitboard> = ColoredData::default();
+
+        // Verify all bitboards are initialized to 0
+        assert_eq!(data.white.0, 0);
+        assert_eq!(data.black.0, 0);
+        assert_eq!(data.both.0, 0);
+    }
+
+    #[test]
+    fn test_piece_kind_counts_default() {
+        let counts = PieceKindCounts::default();
+
+        // Verify all piece counts are initialized to 0
+        assert_eq!(counts.pawns, 0);
+        assert_eq!(counts.knights, 0);
+        assert_eq!(counts.bishops, 0);
+        assert_eq!(counts.rooks, 0);
+        assert_eq!(counts.queens, 0);
+        assert_eq!(counts.kings, 0);
+    }
+
+    #[test]
+    fn test_colored_pair_default() {
+        let pair: ColoredPair<u8> = ColoredPair::default();
+
+        // Verify both values are initialized to 0
+        assert_eq!(pair.white, 0);
+        assert_eq!(pair.black, 0);
+    }
+
+    #[test]
+    fn test_bitboard_default() {
+        let bitboard = Bitboard::default();
+
+        // Verify bitboard is initialized to 0
+        assert_eq!(bitboard.0, 0);
+    }
+
+    #[test]
+    fn test_board_piece_counts_initialization() {
+        let board = Board::new();
+
+        // Verify piece counts are all initialized to 0
+        assert_eq!(board.pieces.white.pawns, 0);
+        assert_eq!(board.pieces.white.knights, 0);
+        assert_eq!(board.pieces.black.pawns, 0);
+        assert_eq!(board.pieces.both.queens, 0);
+
+        // Verify big/major/minor piece counts are 0
+        assert_eq!(board.big_pieces.white, 0);
+        assert_eq!(board.major_pieces.black, 0);
+        assert_eq!(board.minor_pieces.both, 0);
     }
 }
