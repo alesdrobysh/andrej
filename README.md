@@ -22,6 +22,8 @@ cargo test     # Run tests
 - Core types: `Piece`, `Square`, `Position`, `Board`
 - Type-safe coordinates using `File` and `Rank` enums
 - Position indexing formula: `(rank + 2) * 10 + (file + 1)`
+- Terminal rendering with grayscale board
+- Filled Unicode chess pieces (♟♞♝♜♛♚) for both sides
 
 ## Roadmap
 

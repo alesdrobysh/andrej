@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use colored::Colorize;
 use std::fmt::Display;
 
 type SquareIndex = u8;
@@ -23,10 +24,34 @@ enum Color {
     Black,
 }
 
+impl PieceKind {
+    fn to_unicode(&self, _color: Color) -> &'static str {
+        match self {
+            PieceKind::Pawn => "♟",
+            PieceKind::Knight => "♞",
+            PieceKind::Bishop => "♝",
+            PieceKind::Rook => "♜",
+            PieceKind::Queen => "♛",
+            PieceKind::King => "♚",
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 struct Piece {
     kind: PieceKind,
     color: Color,
+}
+
+impl Display for Piece {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let symbol = self.kind.to_unicode(self.color);
+        let emoji = match self.color {
+            Color::White => symbol.truecolor(255, 255, 255).bold(),
+            Color::Black => symbol.truecolor(0, 0, 0).bold(),
+        };
+        write!(f, "{}", emoji)
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -137,9 +162,46 @@ struct Board {
     kings: ColoredPair<Position>,
 }
 
+impl Display for Board {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Iterate from rank 8 down to rank 1 (top to bottom of display)
+        for rank in (0..8).rev() {
+            write!(f, "{} ", rank + 1)?;
+
+            for file in 0..8 {
+                let index = ((rank + 2) * 10 + (file + 1)) as usize;
+                let square = self.squares[index];
+                let is_light = (file + rank) % 2 == 0;
+
+                let (bg_r, bg_g, bg_b) = if is_light {
+                    (180, 180, 180)
+                } else {
+                    (120, 120, 120)
+                };
+
+                let colored_cell = match square {
+                    Square::Empty => "   ".on_truecolor(bg_r, bg_g, bg_b),
+                    Square::Occupied(piece) => {
+                        let content = format!(" {} ", piece);
+                        content.on_truecolor(bg_r, bg_g, bg_b)
+                    }
+                    Square::OffBoard => "   ".on_truecolor(bg_r, bg_g, bg_b),
+                };
+
+                write!(f, "{}", colored_cell)?;
+            }
+
+            writeln!(f)?;
+        }
+
+        writeln!(f, "   a  b  c  d  e  f  g  h")?;
+        Ok(())
+    }
+}
+
 impl Board {
     fn new() -> Self {
-        Board {
+        let mut board = Board {
             squares: [Square::OffBoard; 120],
             turn: Color::White,
             en_passant_target: None,
@@ -152,7 +214,110 @@ impl Board {
                 white: Position::new(File::E, Rank::One),
                 black: Position::new(File::E, Rank::Eight),
             },
+        };
+
+        for rank in 0..8 {
+            for file in 0..8 {
+                let index = ((rank + 2) * 10 + (file + 1)) as usize;
+                board.squares[index] = Square::Empty;
+            }
         }
+
+        let place = |board: &mut Board, file: File, rank: Rank, piece: Piece| {
+            let pos = Position::new(file, rank);
+            let index = pos.to_index() as usize;
+            board.squares[index] = Square::Occupied(piece);
+        };
+
+        let white_back_rank = [
+            (File::A, PieceKind::Rook),
+            (File::B, PieceKind::Knight),
+            (File::C, PieceKind::Bishop),
+            (File::D, PieceKind::Queen),
+            (File::E, PieceKind::King),
+            (File::F, PieceKind::Bishop),
+            (File::G, PieceKind::Knight),
+            (File::H, PieceKind::Rook),
+        ];
+
+        for (file, kind) in white_back_rank {
+            place(
+                &mut board,
+                file,
+                Rank::One,
+                Piece {
+                    kind,
+                    color: Color::White,
+                },
+            );
+        }
+
+        for file in [
+            File::A,
+            File::B,
+            File::C,
+            File::D,
+            File::E,
+            File::F,
+            File::G,
+            File::H,
+        ] {
+            place(
+                &mut board,
+                file,
+                Rank::Two,
+                Piece {
+                    kind: PieceKind::Pawn,
+                    color: Color::White,
+                },
+            );
+        }
+
+        let black_back_rank = [
+            (File::A, PieceKind::Rook),
+            (File::B, PieceKind::Knight),
+            (File::C, PieceKind::Bishop),
+            (File::D, PieceKind::Queen),
+            (File::E, PieceKind::King),
+            (File::F, PieceKind::Bishop),
+            (File::G, PieceKind::Knight),
+            (File::H, PieceKind::Rook),
+        ];
+
+        for (file, kind) in black_back_rank {
+            place(
+                &mut board,
+                file,
+                Rank::Eight,
+                Piece {
+                    kind,
+                    color: Color::Black,
+                },
+            );
+        }
+
+        for file in [
+            File::A,
+            File::B,
+            File::C,
+            File::D,
+            File::E,
+            File::F,
+            File::G,
+            File::H,
+        ] {
+            place(
+                &mut board,
+                file,
+                Rank::Seven,
+                Piece {
+                    kind: PieceKind::Pawn,
+                    color: Color::Black,
+                },
+            );
+        }
+
+        board
     }
 }
 
@@ -166,7 +331,7 @@ struct State {
 
 fn main() {
     let board = Board::new();
-    println!("{:?}", board);
+    println!("{}", board);
 }
 
 #[cfg(test)]
@@ -226,9 +391,27 @@ mod tests {
         // Verify en_passant_target is None
         assert!(board.en_passant_target.is_none());
 
-        // Verify all squares are initialized to OffBoard
-        for square in board.squares.iter() {
-            assert!(matches!(square, Square::OffBoard));
+        // Verify off-board squares are OffBoard (sentinel squares)
+        // Check first row (indices 0-9)
+        for i in 0..10 {
+            assert!(matches!(board.squares[i], Square::OffBoard));
+        }
+
+        // Check last two rows (indices 100-119)
+        for i in 100..120 {
+            assert!(matches!(board.squares[i], Square::OffBoard));
+        }
+
+        // Verify valid board squares are either Empty or Occupied
+        for rank in 0..8 {
+            for file in 0..8 {
+                let index = ((rank + 2) * 10 + (file + 1)) as usize;
+                assert!(
+                    matches!(board.squares[index], Square::Empty | Square::Occupied(_)),
+                    "Square at index {} should be Empty or Occupied",
+                    index
+                );
+            }
         }
     }
 
@@ -300,5 +483,293 @@ mod tests {
         assert_eq!(board.big_pieces.white, 0);
         assert_eq!(board.major_pieces.black, 0);
         assert_eq!(board.minor_pieces.both, 0);
+    }
+
+    #[test]
+    fn test_piece_display() {
+        // Both white and black pieces use the same filled symbols
+        // Test white pieces
+        assert_eq!(
+            Piece {
+                kind: PieceKind::King,
+                color: Color::White
+            }
+            .to_string(),
+            "♚"
+        );
+        assert_eq!(
+            Piece {
+                kind: PieceKind::Queen,
+                color: Color::White
+            }
+            .to_string(),
+            "♛"
+        );
+        assert_eq!(
+            Piece {
+                kind: PieceKind::Rook,
+                color: Color::White
+            }
+            .to_string(),
+            "♜"
+        );
+        assert_eq!(
+            Piece {
+                kind: PieceKind::Bishop,
+                color: Color::White
+            }
+            .to_string(),
+            "♝"
+        );
+        assert_eq!(
+            Piece {
+                kind: PieceKind::Knight,
+                color: Color::White
+            }
+            .to_string(),
+            "♞"
+        );
+        assert_eq!(
+            Piece {
+                kind: PieceKind::Pawn,
+                color: Color::White
+            }
+            .to_string(),
+            "♟"
+        );
+
+        // Test black pieces
+        assert_eq!(
+            Piece {
+                kind: PieceKind::King,
+                color: Color::Black
+            }
+            .to_string(),
+            "♚"
+        );
+        assert_eq!(
+            Piece {
+                kind: PieceKind::Queen,
+                color: Color::Black
+            }
+            .to_string(),
+            "♛"
+        );
+        assert_eq!(
+            Piece {
+                kind: PieceKind::Rook,
+                color: Color::Black
+            }
+            .to_string(),
+            "♜"
+        );
+        assert_eq!(
+            Piece {
+                kind: PieceKind::Bishop,
+                color: Color::Black
+            }
+            .to_string(),
+            "♝"
+        );
+        assert_eq!(
+            Piece {
+                kind: PieceKind::Knight,
+                color: Color::Black
+            }
+            .to_string(),
+            "♞"
+        );
+        assert_eq!(
+            Piece {
+                kind: PieceKind::Pawn,
+                color: Color::Black
+            }
+            .to_string(),
+            "♟"
+        );
+    }
+
+    #[test]
+    fn test_board_starting_position() {
+        let board = Board::new();
+
+        // Helper to get piece at position
+        let get_piece = |file: File, rank: Rank| {
+            let pos = Position::new(file, rank);
+            let index = pos.to_index() as usize;
+            board.squares[index]
+        };
+
+        // Test white back rank
+        assert!(matches!(
+            get_piece(File::A, Rank::One),
+            Square::Occupied(Piece {
+                kind: PieceKind::Rook,
+                color: Color::White
+            })
+        ));
+        assert!(matches!(
+            get_piece(File::B, Rank::One),
+            Square::Occupied(Piece {
+                kind: PieceKind::Knight,
+                color: Color::White
+            })
+        ));
+        assert!(matches!(
+            get_piece(File::C, Rank::One),
+            Square::Occupied(Piece {
+                kind: PieceKind::Bishop,
+                color: Color::White
+            })
+        ));
+        assert!(matches!(
+            get_piece(File::D, Rank::One),
+            Square::Occupied(Piece {
+                kind: PieceKind::Queen,
+                color: Color::White
+            })
+        ));
+        assert!(matches!(
+            get_piece(File::E, Rank::One),
+            Square::Occupied(Piece {
+                kind: PieceKind::King,
+                color: Color::White
+            })
+        ));
+        assert!(matches!(
+            get_piece(File::F, Rank::One),
+            Square::Occupied(Piece {
+                kind: PieceKind::Bishop,
+                color: Color::White
+            })
+        ));
+        assert!(matches!(
+            get_piece(File::G, Rank::One),
+            Square::Occupied(Piece {
+                kind: PieceKind::Knight,
+                color: Color::White
+            })
+        ));
+        assert!(matches!(
+            get_piece(File::H, Rank::One),
+            Square::Occupied(Piece {
+                kind: PieceKind::Rook,
+                color: Color::White
+            })
+        ));
+
+        // Test white pawns
+        for file in [
+            File::A,
+            File::B,
+            File::C,
+            File::D,
+            File::E,
+            File::F,
+            File::G,
+            File::H,
+        ] {
+            assert!(matches!(
+                get_piece(file, Rank::Two),
+                Square::Occupied(Piece {
+                    kind: PieceKind::Pawn,
+                    color: Color::White
+                })
+            ));
+        }
+
+        // Test black back rank
+        assert!(matches!(
+            get_piece(File::A, Rank::Eight),
+            Square::Occupied(Piece {
+                kind: PieceKind::Rook,
+                color: Color::Black
+            })
+        ));
+        assert!(matches!(
+            get_piece(File::B, Rank::Eight),
+            Square::Occupied(Piece {
+                kind: PieceKind::Knight,
+                color: Color::Black
+            })
+        ));
+        assert!(matches!(
+            get_piece(File::C, Rank::Eight),
+            Square::Occupied(Piece {
+                kind: PieceKind::Bishop,
+                color: Color::Black
+            })
+        ));
+        assert!(matches!(
+            get_piece(File::D, Rank::Eight),
+            Square::Occupied(Piece {
+                kind: PieceKind::Queen,
+                color: Color::Black
+            })
+        ));
+        assert!(matches!(
+            get_piece(File::E, Rank::Eight),
+            Square::Occupied(Piece {
+                kind: PieceKind::King,
+                color: Color::Black
+            })
+        ));
+        assert!(matches!(
+            get_piece(File::F, Rank::Eight),
+            Square::Occupied(Piece {
+                kind: PieceKind::Bishop,
+                color: Color::Black
+            })
+        ));
+        assert!(matches!(
+            get_piece(File::G, Rank::Eight),
+            Square::Occupied(Piece {
+                kind: PieceKind::Knight,
+                color: Color::Black
+            })
+        ));
+        assert!(matches!(
+            get_piece(File::H, Rank::Eight),
+            Square::Occupied(Piece {
+                kind: PieceKind::Rook,
+                color: Color::Black
+            })
+        ));
+
+        // Test black pawns
+        for file in [
+            File::A,
+            File::B,
+            File::C,
+            File::D,
+            File::E,
+            File::F,
+            File::G,
+            File::H,
+        ] {
+            assert!(matches!(
+                get_piece(file, Rank::Seven),
+                Square::Occupied(Piece {
+                    kind: PieceKind::Pawn,
+                    color: Color::Black
+                })
+            ));
+        }
+
+        // Test empty squares (ranks 3-6)
+        for rank in [Rank::Three, Rank::Four, Rank::Five, Rank::Six] {
+            for file in [
+                File::A,
+                File::B,
+                File::C,
+                File::D,
+                File::E,
+                File::F,
+                File::G,
+                File::H,
+            ] {
+                assert!(matches!(get_piece(file, rank), Square::Empty));
+            }
+        }
     }
 }
