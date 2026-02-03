@@ -1,5 +1,7 @@
 # ♟️ Andrej
 
+![Rust](https://github.com/alesdrobysh/andrej/actions/workflows/rust.yml/badge.svg?branch=master)
+
 A chess engine written in Rust. Named after my brother who always beats me at chess.
 
 Following the [Chess Engine in C](https://www.youtube.com/playlist?list=PLZ1QII7yudbc-Ky058TEaOstZHVbT-2hg) tutorial series.
