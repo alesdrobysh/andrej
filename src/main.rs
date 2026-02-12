@@ -8,6 +8,9 @@ type SquareIndex = u8;
 #[derive(Debug, Default)]
 struct Bitboard(u64);
 
+#[derive(Debug, Default)]
+struct ZobristKey(u64);
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum PieceKind {
     Pawn,
@@ -150,6 +153,23 @@ struct ColoredPair<T> {
 }
 
 #[derive(Debug)]
+enum CastlingRight {
+    WhiteKingSide = 1,
+    WhiteQueenSide = 2,
+    BlackKingSide = 4,
+    BlackQueenSide = 8,
+}
+
+#[derive(Debug)]
+struct Undo {
+    move_: u32,
+    castling_rights: u8,
+    en_passant_target: Option<Position>,
+    fifty_move_counter: u8,
+    position_key: ZobristKey,
+}
+
+#[derive(Debug)]
 struct Board {
     squares: [Square; 120],
     turn: Color,
@@ -160,6 +180,11 @@ struct Board {
     major_pieces: ColoredData<u8>,
     minor_pieces: ColoredData<u8>,
     kings: ColoredPair<Position>,
+    position_key: ZobristKey,
+    castling_rights: u8,
+    fifty_moves: u8,
+    history: Vec<Undo>,
+    ply: u32,
 }
 
 impl Display for Board {
@@ -214,6 +239,14 @@ impl Board {
                 white: Position::new(File::E, Rank::One),
                 black: Position::new(File::E, Rank::Eight),
             },
+            position_key: ZobristKey::default(),
+            castling_rights: CastlingRight::WhiteKingSide as u8
+                | CastlingRight::WhiteQueenSide as u8
+                | CastlingRight::BlackKingSide as u8
+                | CastlingRight::BlackQueenSide as u8,
+            fifty_moves: 0,
+            history: Vec::new(),
+            ply: 0,
         };
 
         for rank in 0..8 {
@@ -319,14 +352,6 @@ impl Board {
 
         board
     }
-}
-
-#[derive(Debug)]
-struct State {
-    board: Board,
-    ply: u32,
-    history_ply: u32,
-    fifty_moves: u8,
 }
 
 fn main() {
