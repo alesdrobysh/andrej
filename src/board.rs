@@ -75,6 +75,10 @@ impl File {
         (b'a' + self as u8) as char
     }
 
+    pub fn iter() -> impl Iterator<Item = File> {
+        (0..8).map(|i| unsafe { std::mem::transmute::<u8, File>(i) })
+    }
+
     pub fn from_char(c: char) -> Option<Self> {
         match c {
             'a' => Some(File::A),
@@ -106,6 +110,10 @@ pub enum Rank {
 impl Rank {
     pub fn to_char(self) -> char {
         (b'1' + self as u8) as char
+    }
+
+    pub fn iter() -> impl Iterator<Item = Rank> {
+        (0..8).map(|i| unsafe { std::mem::transmute::<u8, Rank>(i) })
     }
 
     pub fn from_char(c: char) -> Option<Self> {
@@ -287,9 +295,9 @@ impl Board {
             ply: 0,
         };
 
-        for rank in '1'..='8' {
-            for file in 'a'..='h' {
-                let index = file_rank_to_120_index(file, rank);
+        for rank in Rank::iter() {
+            for file in File::iter() {
+                let index = file_rank_to_120_index(file.to_char(), rank.to_char());
                 board.squares[index] = Square::Empty;
             }
         }
@@ -323,16 +331,7 @@ impl Board {
             );
         }
 
-        for file in [
-            File::A,
-            File::B,
-            File::C,
-            File::D,
-            File::E,
-            File::F,
-            File::G,
-            File::H,
-        ] {
+        for file in File::iter() {
             place(
                 &mut board,
                 file,
@@ -367,16 +366,7 @@ impl Board {
             );
         }
 
-        for file in [
-            File::A,
-            File::B,
-            File::C,
-            File::D,
-            File::E,
-            File::F,
-            File::G,
-            File::H,
-        ] {
+        for file in File::iter() {
             place(
                 &mut board,
                 file,
@@ -452,9 +442,9 @@ mod tests {
             assert!(matches!(board.squares[i], Square::OffBoard));
         }
 
-        for rank in '1'..='8' {
-            for file in 'a'..='h' {
-                let index = file_rank_to_120_index(file, rank);
+        for rank in Rank::iter() {
+            for file in File::iter() {
+                let index = file_rank_to_120_index(file.to_char(), rank.to_char());
                 assert!(
                     matches!(board.squares[index], Square::Empty | Square::Occupied(_)),
                     "Square at index {} should be Empty or Occupied",
@@ -635,16 +625,7 @@ mod tests {
             })
         ));
 
-        for file in [
-            File::A,
-            File::B,
-            File::C,
-            File::D,
-            File::E,
-            File::F,
-            File::G,
-            File::H,
-        ] {
+        for file in File::iter() {
             assert!(matches!(
                 get_piece(file, Rank::Two),
                 Square::Occupied(Piece {
@@ -711,16 +692,7 @@ mod tests {
             })
         ));
 
-        for file in [
-            File::A,
-            File::B,
-            File::C,
-            File::D,
-            File::E,
-            File::F,
-            File::G,
-            File::H,
-        ] {
+        for file in File::iter() {
             assert!(matches!(
                 get_piece(file, Rank::Seven),
                 Square::Occupied(Piece {
@@ -731,16 +703,7 @@ mod tests {
         }
 
         for rank in [Rank::Three, Rank::Four, Rank::Five, Rank::Six] {
-            for file in [
-                File::A,
-                File::B,
-                File::C,
-                File::D,
-                File::E,
-                File::F,
-                File::G,
-                File::H,
-            ] {
+            for file in File::iter() {
                 assert!(matches!(get_piece(file, rank), Square::Empty));
             }
         }
