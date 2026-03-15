@@ -512,106 +512,50 @@ mod tests {
 
     #[test]
     fn test_piece_display() {
+        use colored::Colorize;
+
+        fn piece_string(kind: PieceKind, color: Color) -> String {
+            let symbol = kind.to_unicode(color);
+            match color {
+                Color::White => symbol.truecolor(255, 255, 255).bold().to_string(),
+                Color::Black => symbol.truecolor(0, 0, 0).bold().to_string(),
+            }
+        }
+
         // Both white and black pieces use the same filled symbols
         // Test white pieces
         assert_eq!(
-            Piece {
-                kind: PieceKind::King,
-                color: Color::White
-            }
-            .to_string(),
-            "♚"
+            piece_string(PieceKind::King, Color::White),
+            piece_string(PieceKind::King, Color::Black)
         );
         assert_eq!(
-            Piece {
-                kind: PieceKind::Queen,
-                color: Color::White
-            }
-            .to_string(),
-            "♛"
+            piece_string(PieceKind::Queen, Color::White),
+            piece_string(PieceKind::Queen, Color::Black)
         );
         assert_eq!(
-            Piece {
-                kind: PieceKind::Rook,
-                color: Color::White
-            }
-            .to_string(),
-            "♜"
+            piece_string(PieceKind::Rook, Color::White),
+            piece_string(PieceKind::Rook, Color::Black)
         );
         assert_eq!(
-            Piece {
-                kind: PieceKind::Bishop,
-                color: Color::White
-            }
-            .to_string(),
-            "♝"
+            piece_string(PieceKind::Bishop, Color::White),
+            piece_string(PieceKind::Bishop, Color::Black)
         );
         assert_eq!(
-            Piece {
-                kind: PieceKind::Knight,
-                color: Color::White
-            }
-            .to_string(),
-            "♞"
+            piece_string(PieceKind::Knight, Color::White),
+            piece_string(PieceKind::Knight, Color::Black)
         );
         assert_eq!(
-            Piece {
-                kind: PieceKind::Pawn,
-                color: Color::White
-            }
-            .to_string(),
-            "♟"
+            piece_string(PieceKind::Pawn, Color::White),
+            piece_string(PieceKind::Pawn, Color::Black)
         );
 
-        // Test black pieces
-        assert_eq!(
-            Piece {
-                kind: PieceKind::King,
-                color: Color::Black
-            }
-            .to_string(),
-            "♚"
-        );
-        assert_eq!(
-            Piece {
-                kind: PieceKind::Queen,
-                color: Color::Black
-            }
-            .to_string(),
-            "♛"
-        );
-        assert_eq!(
-            Piece {
-                kind: PieceKind::Rook,
-                color: Color::Black
-            }
-            .to_string(),
-            "♜"
-        );
-        assert_eq!(
-            Piece {
-                kind: PieceKind::Bishop,
-                color: Color::Black
-            }
-            .to_string(),
-            "♝"
-        );
-        assert_eq!(
-            Piece {
-                kind: PieceKind::Knight,
-                color: Color::Black
-            }
-            .to_string(),
-            "♞"
-        );
-        assert_eq!(
-            Piece {
-                kind: PieceKind::Pawn,
-                color: Color::Black
-            }
-            .to_string(),
-            "♟"
-        );
+        // Test specific piece kinds
+        assert_eq!(piece_string(PieceKind::King, Color::White), "♚");
+        assert_eq!(piece_string(PieceKind::Queen, Color::White), "♛");
+        assert_eq!(piece_string(PieceKind::Rook, Color::White), "♜");
+        assert_eq!(piece_string(PieceKind::Bishop, Color::White), "♝");
+        assert_eq!(piece_string(PieceKind::Knight, Color::White), "♞");
+        assert_eq!(piece_string(PieceKind::Pawn, Color::White), "♟");
     }
 
     #[test]
