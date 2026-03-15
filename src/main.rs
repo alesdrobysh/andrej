@@ -3,7 +3,7 @@
 use colored::Colorize;
 use std::fmt::Display;
 
-type SquareIndex = u8;
+type SquareIndex = usize;
 
 #[derive(Debug, Default)]
 struct Bitboard(u64);
@@ -94,6 +94,13 @@ impl Rank {
         (b'1' + self as u8) as char
     }
 }
+
+#[inline(always)]
+fn file_rank_to_120_index(file: char, rank: char) -> SquareIndex {
+    (rank as SquareIndex - '1' as SquareIndex + 2) * 10
+        + (file as SquareIndex - 'a' as SquareIndex + 1)
+}
+
 #[derive(Debug, Copy, Clone)]
 struct Position {
     file: File,
@@ -106,7 +113,7 @@ impl Position {
     }
 
     fn to_index(&self) -> SquareIndex {
-        (self.rank as SquareIndex + 2) * 10 + (self.file as SquareIndex + 1)
+        file_rank_to_120_index(self.file.to_char(), self.rank.to_char())
     }
 }
 
@@ -249,9 +256,9 @@ impl Board {
             ply: 0,
         };
 
-        for rank in 0..8 {
-            for file in 0..8 {
-                let index = ((rank + 2) * 10 + (file + 1)) as usize;
+        for rank in '1'..='8' {
+            for file in 'a'..='h' {
+                let index = file_rank_to_120_index(file, rank);
                 board.squares[index] = Square::Empty;
             }
         }
@@ -428,9 +435,9 @@ mod tests {
         }
 
         // Verify valid board squares are either Empty or Occupied
-        for rank in 0..8 {
-            for file in 0..8 {
-                let index = ((rank + 2) * 10 + (file + 1)) as usize;
+        for rank in '1'..='8' {
+            for file in 'a'..='h' {
+                let index = file_rank_to_120_index(file, rank);
                 assert!(
                     matches!(board.squares[index], Square::Empty | Square::Occupied(_)),
                     "Square at index {} should be Empty or Occupied",
