@@ -74,6 +74,20 @@ impl File {
     fn to_char(self) -> char {
         (b'a' + self as u8) as char
     }
+
+    fn from_char(c: char) -> Option<Self> {
+        match c {
+            'a' => Some(File::A),
+            'b' => Some(File::B),
+            'c' => Some(File::C),
+            'd' => Some(File::D),
+            'e' => Some(File::E),
+            'f' => Some(File::F),
+            'g' => Some(File::G),
+            'h' => Some(File::H),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -92,6 +106,20 @@ enum Rank {
 impl Rank {
     fn to_char(self) -> char {
         (b'1' + self as u8) as char
+    }
+
+    fn from_char(c: char) -> Option<Self> {
+        match c {
+            '1' => Some(Rank::One),
+            '2' => Some(Rank::Two),
+            '3' => Some(Rank::Three),
+            '4' => Some(Rank::Four),
+            '5' => Some(Rank::Five),
+            '6' => Some(Rank::Six),
+            '7' => Some(Rank::Seven),
+            '8' => Some(Rank::Eight),
+            _ => None,
+        }
     }
 }
 
@@ -197,12 +225,16 @@ struct Board {
 impl Display for Board {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Iterate from rank 8 down to rank 1 (top to bottom of display)
-        for rank in (0..8).rev() {
-            write!(f, "{} ", rank + 1)?;
+        for rank in ('8'..='1').rev() {
+            write!(f, "{} ", rank)?;
 
-            for file in 0..8 {
-                let index = ((rank + 2) * 10 + (file + 1)) as usize;
+            for file in 'a'..='h' {
+                let index = file_rank_to_120_index(file, rank);
                 let square = self.squares[index];
+
+                let file = File::from_char(file).unwrap() as u8;
+                let rank = Rank::from_char(rank).unwrap() as u8;
+
                 let is_light = (file + rank) % 2 == 0;
 
                 let (bg_r, bg_g, bg_b) = if is_light {
