@@ -3,6 +3,9 @@
 use colored::Colorize;
 use std::fmt::Display;
 
+const BRD_SQ_NUM: usize = 120;
+const MAX_SQ_NUM: usize = 64;
+
 pub type SquareIndex = usize;
 
 #[derive(Debug, Default)]
@@ -214,7 +217,7 @@ pub struct Undo {
 
 #[derive(Debug)]
 pub struct Board {
-    pub squares: [Square; 120],
+    pub squares: [Square; BRD_SQ_NUM],
     pub turn: Color,
     pub en_passant_target: Option<Position>,
     pub pawns: ColoredData<Bitboard>,
@@ -273,7 +276,7 @@ impl Display for Board {
 impl Board {
     pub fn new() -> Self {
         let mut board = Board {
-            squares: [Square::OffBoard; 120],
+            squares: [Square::OffBoard; BRD_SQ_NUM],
             turn: Color::White,
             en_passant_target: None,
             pawns: ColoredData::default(),
