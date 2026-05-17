@@ -1,15 +1,50 @@
 #![allow(dead_code)]
 
 use colored::Colorize;
-use std::fmt::Display;
+use std::{fmt::Display, ops::{Add, BitAnd}};
 
 const BRD_SQ_NUM: usize = 120;
 const MAX_SQ_NUM: usize = 64;
 
 pub type SquareIndex = usize;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct Bitboard(pub u64);
+
+impl BitAnd for Bitboard {
+    type Output = Self;
+
+    // rhs is the "right-hand side" of the expression `a & b`
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self(self.0 & rhs.0)
+    }
+}
+
+impl Display for  Bitboard {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let shift_me: u64 = 1;
+        let mut result = String::new();
+
+        for rank in Rank::iter() {
+            for file in File::iter() {
+                let index = file_rank_to_64_index(file.to_char(), rank.to_char());
+                let bb = *self;
+                let bb_shift = shift_me << (index - 1);
+                
+                if (bb_shift & bb.0) > 0 {
+                    result = result.add("X");
+                } else {
+                    result = result.add("-");
+                } 
+            }
+
+            result = result.add("\n");
+
+        }
+
+        writeln!(f, "{}", result)
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct ZobristKey(pub u64);
@@ -137,6 +172,12 @@ impl Rank {
 #[inline(always)]
 pub fn file_rank_to_120_index(file: char, rank: char) -> SquareIndex {
     (rank as SquareIndex - '1' as SquareIndex + 2) * 10
+        + (file as SquareIndex - 'a' as SquareIndex + 1)
+}
+
+#[inline(always)]
+pub fn file_rank_to_64_index(file: char, rank: char) -> SquareIndex {
+    (rank as SquareIndex - '1' as SquareIndex) * 8
         + (file as SquareIndex - 'a' as SquareIndex + 1)
 }
 
