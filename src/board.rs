@@ -235,7 +235,7 @@ pub struct Board {
 
 impl Display for Board {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for rank in ('8'..='1').rev() {
+        for rank in ('1'..='8').rev() {
             write!(f, "{} ", rank)?;
 
             for file in 'a'..='h' {
