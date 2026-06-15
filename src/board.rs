@@ -11,6 +11,16 @@ pub type SquareIndex = usize;
 #[derive(Debug, Default, Copy, Clone)]
 pub struct Bitboard(pub u64);
 
+impl Bitboard {
+    fn set(self, index: SquareIndex) -> Self {
+        Self(self.0 | 1 << index)
+    }
+
+    fn clear(self, index: SquareIndex) -> Self {
+        Self(self.0 & !(1 << index))
+    }
+}
+
 impl BitAnd for Bitboard {
     type Output = Self;
 
