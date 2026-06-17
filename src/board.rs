@@ -11,13 +11,26 @@ pub type SquareIndex = usize;
 #[derive(Debug, Default, Copy, Clone)]
 pub struct Bitboard(pub u64);
 
+
 impl Bitboard {
-    fn set(self, index: SquareIndex) -> Self {
-        Self(self.0 | 1 << index)
+    pub fn set(&mut self, index: SquareIndex) -> &mut Self {
+        self.0 |= 1 << index;
+        self
     }
 
-    fn clear(self, index: SquareIndex) -> Self {
-        Self(self.0 & !(1 << index))
+    pub fn clear(&mut self, index: SquareIndex) -> &mut Self {
+        self.0 &= !(1 << index);
+        self
+    }
+
+    pub fn count(&self) -> u32 {
+        self.0.count_ones()
+    }
+
+    pub fn pop(&mut self) -> SquareIndex {
+        let pop_index = self.0.trailing_zeros() as SquareIndex;
+        self.clear(pop_index);
+        pop_index
     }
 }
 
@@ -35,7 +48,7 @@ impl Display for  Bitboard {
         let shift_me: u64 = 1;
         let mut result = String::new();
 
-        for rank in Rank::iter() {
+        for rank in Rank::iter().rev() {
             for file in File::iter() {
                 let index = file_rank_to_64_index(file.to_char(), rank.to_char());
                 let bb = *self;
@@ -160,7 +173,7 @@ impl Rank {
         (b'1' + self as u8) as char
     }
 
-    pub fn iter() -> impl Iterator<Item = Rank> {
+    pub fn iter() -> impl DoubleEndedIterator<Item = Rank> {
         (0..8).map(|i| unsafe { std::mem::transmute::<u8, Rank>(i) })
     }
 
