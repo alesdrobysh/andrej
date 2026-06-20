@@ -1,73 +1,13 @@
 #![allow(dead_code)]
 
 use colored::Colorize;
-use std::{fmt::Display, ops::{Add, BitAnd}};
+use std::{fmt::Display};
+
+use crate::shared::{SquareIndex, File, Rank, file_rank_to_120_index};
+use crate::bitboard::Bitboard;
 
 const BRD_SQ_NUM: usize = 120;
 const MAX_SQ_NUM: usize = 64;
-
-pub type SquareIndex = usize;
-
-#[derive(Debug, Default, Copy, Clone)]
-pub struct Bitboard(pub u64);
-
-
-impl Bitboard {
-    pub fn set(&mut self, index: SquareIndex) -> &mut Self {
-        self.0 |= 1 << index;
-        self
-    }
-
-    pub fn clear(&mut self, index: SquareIndex) -> &mut Self {
-        self.0 &= !(1 << index);
-        self
-    }
-
-    pub fn count(&self) -> u32 {
-        self.0.count_ones()
-    }
-
-    pub fn pop(&mut self) -> SquareIndex {
-        let pop_index = self.0.trailing_zeros() as SquareIndex;
-        self.clear(pop_index);
-        pop_index
-    }
-}
-
-impl BitAnd for Bitboard {
-    type Output = Self;
-
-    // rhs is the "right-hand side" of the expression `a & b`
-    fn bitand(self, rhs: Self) -> Self::Output {
-        Self(self.0 & rhs.0)
-    }
-}
-
-impl Display for  Bitboard {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let shift_me: u64 = 1;
-        let mut result = String::new();
-
-        for rank in Rank::iter().rev() {
-            for file in File::iter() {
-                let index = file_rank_to_64_index(file.to_char(), rank.to_char());
-                let bb = *self;
-                let bb_shift = shift_me << (index - 1);
-                
-                if (bb_shift & bb.0) > 0 {
-                    result = result.add("X");
-                } else {
-                    result = result.add("-");
-                } 
-            }
-
-            result = result.add("\n");
-
-        }
-
-        writeln!(f, "{}", result)
-    }
-}
 
 #[derive(Debug, Default)]
 pub struct ZobristKey(pub u64);
@@ -116,92 +56,6 @@ impl Display for Piece {
         };
         write!(f, "{}", emoji)
     }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(u8)]
-pub enum File {
-    A = 0,
-    B,
-    C,
-    D,
-    E,
-    F,
-    G,
-    H,
-}
-
-impl File {
-    pub fn to_char(self) -> char {
-        (b'a' + self as u8) as char
-    }
-
-    pub fn iter() -> impl Iterator<Item = File> {
-        (0..8).map(|i| unsafe { std::mem::transmute::<u8, File>(i) })
-    }
-
-    pub fn from_char(c: char) -> Option<Self> {
-        match c {
-            'a' => Some(File::A),
-            'b' => Some(File::B),
-            'c' => Some(File::C),
-            'd' => Some(File::D),
-            'e' => Some(File::E),
-            'f' => Some(File::F),
-            'g' => Some(File::G),
-            'h' => Some(File::H),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(u8)]
-pub enum Rank {
-    One = 0,
-    Two,
-    Three,
-    Four,
-    Five,
-    Six,
-    Seven,
-    Eight,
-}
-
-impl Rank {
-    pub fn to_char(self) -> char {
-        (b'1' + self as u8) as char
-    }
-
-    pub fn iter() -> impl DoubleEndedIterator<Item = Rank> {
-        (0..8).map(|i| unsafe { std::mem::transmute::<u8, Rank>(i) })
-    }
-
-    pub fn from_char(c: char) -> Option<Self> {
-        match c {
-            '1' => Some(Rank::One),
-            '2' => Some(Rank::Two),
-            '3' => Some(Rank::Three),
-            '4' => Some(Rank::Four),
-            '5' => Some(Rank::Five),
-            '6' => Some(Rank::Six),
-            '7' => Some(Rank::Seven),
-            '8' => Some(Rank::Eight),
-            _ => None,
-        }
-    }
-}
-
-#[inline(always)]
-pub fn file_rank_to_120_index(file: char, rank: char) -> SquareIndex {
-    (rank as SquareIndex - '1' as SquareIndex + 2) * 10
-        + (file as SquareIndex - 'a' as SquareIndex + 1)
-}
-
-#[inline(always)]
-pub fn file_rank_to_64_index(file: char, rank: char) -> SquareIndex {
-    (rank as SquareIndex - '1' as SquareIndex) * 8
-        + (file as SquareIndex - 'a' as SquareIndex + 1)
 }
 
 #[derive(Debug, Copy, Clone)]
